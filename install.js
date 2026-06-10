@@ -163,12 +163,10 @@ module.exports = {
     },
     // Download UVR5 weights from Hugging Face
     {
-      method: "hf.download",
+      method: "shell.run",
       params: {
         path: "app/TTS-Engines/GPT-SoVITS/tools/uvr5",
-        "_": [ "lj1995/VoiceConversionWebUI" ],
-        "include": "uvr5_weights/*",
-        "local-dir": "uvr5_weights"
+        message: 'hf download lj1995/VoiceConversionWebUI --include="uvr5_weights/*" --local-dir=uvr5_weights && dir'
       },
     },
     // Download G2P models from Hugging Face
