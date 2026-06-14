@@ -55,15 +55,6 @@ module.exports = {
         path: "app/TTS-Engines/GPT-SoVITS",
         message: "git pull",
       },
-    },
-    // Re-sync Python dependencies after upstream changes
-    {
-      method: "shell.run",
-      params: {
-        venv: ".venv",
-        path: "app",
-        message: "uv sync",
-      },
-    },
+    }
   ]
 }
