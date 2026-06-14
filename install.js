@@ -116,6 +116,7 @@ module.exports = {
         venv: ".venv",
         path: "app",
         message: [
+          "uv pip install numpy==1.26.4",
           "uv pip install -r ../requirements_cv.txt --index-strategy unsafe-best-match --no-build-isolation"
         ]
       },
