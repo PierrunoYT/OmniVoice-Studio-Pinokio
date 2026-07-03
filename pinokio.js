@@ -1,7 +1,7 @@
 module.exports = {
   version: "7.0",
   menu: async (kernel, info) => {
-    let installed = info.exists("app/.venv")
+    let installed = info.exists("app/.installed")
     let running = {
       install: info.running("install.js"),
       start: info.running("start.js"),

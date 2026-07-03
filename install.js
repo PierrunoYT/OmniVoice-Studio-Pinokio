@@ -167,7 +167,7 @@ module.exports = {
       method: "shell.run",
       params: {
         path: "app/TTS-Engines/GPT-SoVITS/tools/uvr5",
-        message: 'hf download lj1995/VoiceConversionWebUI --include="uvr5_weights/*" --local-dir=uvr5_weights && dir'
+        message: 'hf download lj1995/VoiceConversionWebUI --include="uvr5_weights/*" --local-dir=uvr5_weights'
       },
     },
     // Download G2P models from Hugging Face
@@ -179,13 +179,21 @@ module.exports = {
         "local-dir": "G2PWModel"
       },
     },
+    // Mark install as complete so the menu doesn't offer "Start" until every step above has succeeded
+    {
+      method: "fs.write",
+      params: {
+        path: "app/.installed",
+        text: "true"
+      },
+    },
     // Install SOX and libaio dependencies
     {
       when: "{{which('apt')}}",
       method: "shell.run",
       params: {
         sudo: true,
-        message: "apt-get install -y libaio-dev sox libsox-fmt-all"
+        message: "apt-get update && apt-get install -y libaio-dev sox libsox-fmt-all"
       },
       next: null
     },
