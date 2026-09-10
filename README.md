@@ -1,76 +1,70 @@
-# OmniVoice (Pinokio)
+# OmniVoice Studio (Pinokio)
 
-[OmniVoice](https://github.com/k2-fsa/OmniVoice) zero-shot multilingual TTS (600+ languages) with voice cloning and voice design. Launcher scripts live in the repo root; application code is under `app/`.
+A [Pinokio](https://pinokio.computer) launcher for [OmniVoice Studio](https://github.com/6Morpheus6/OmniVoice-Studio) — local voice cloning, video dubbing, and real-time dictation, with no API keys.
 
-## What it does
+This repository contains **only** the launcher scripts. The application itself is cloned into `app/` by the **Install** step and is not tracked here.
 
-- Installs **PyTorch** via `torch.js` (per platform), then Python deps from `app/requirements.txt` (including `omnivoice`).
-- Validated against **`omnivoice>=0.1.3,<0.2`** and **`gradio>=5.0,<7`**. These pins live in `app/requirements.txt` — bump them there and re-run **Install** or **Update** when upgrading.
-- Starts the **Gradio** UI from **`app/app.py`** (same flow as the [Hugging Face Space](https://huggingface.co/spaces/k2-fsa/OmniVoice)).
-- Uses **one** Pinokio virtual environment: **`env/`** at the **project root** (not under `app/`). If you see both `env/` and `app/env/`, remove `app/env/` and rely on **Install** so PyTorch and packages live in the root `env/` only.
+## Menu actions
 
-## Using in Pinokio
+| Action | Script | What it does |
+|--------|--------|--------------|
+| **Install** | `install.js` | Installs system audio deps, clones the app and its TTS engines, builds the Python and frontend environments, downloads models. |
+| **Start** | `start.js` | Runs the backend, the GPT-SoVITS API, and the frontend, then surfaces the web UI URL. |
+| **Update** | `update.js` | `git pull` for the launcher, the app, and each TTS engine. |
+| **Reset** | `reset.js` | Deletes `app/` to return to the pre-install state. |
 
-1. **Install** — creates `env/`, runs `uv pip install -r app/requirements.txt`, then `torch.js`.
-2. **Start** — from the project root runs **`python app/app.py`** with **`OMNIVOICE_PORT={{port}}`** (next free port). Gradio binds to **`127.0.0.1`** by default; see environment variables below.
-3. **Update** — `git pull` (if this folder is a git repo), then `uv pip install -U -r app/requirements.txt`.
-4. **Reset** — removes `env/` for a clean reinstall.
-5. **Save Disk Space** — `link.js` deduplicates venv library files.
+**Start** only appears once `app/.installed` exists, which `install.js` writes as its final step — so a partially failed install will not offer to launch.
 
-## Environment variables (`app/app.py`)
+## Install
 
-| Variable | Purpose |
-|----------|---------|
-| `OMNIVOICE_MODEL` | Hugging Face repo or checkpoint (default `k2-fsa/OmniVoice`). |
-| `OMNIVOICE_DEVICE` | Force `cuda`, `mps`, or `cpu` (default: auto cuda → mps → cpu). |
-| `OMNIVOICE_LOAD_ASR` | `0` / `false` to skip Whisper ASR (less VRAM; supply reference text for clone). |
-| `OMNIVOICE_HOST` | Gradio `server_name` (default **`127.0.0.1`**). Use `0.0.0.0` to listen on all interfaces. |
-| `OMNIVOICE_PORT`, `PORT`, `GRADIO_SERVER_PORT` | Gradio port (Pinokio sets `OMNIVOICE_PORT`). |
+`install.js` requires Pinokio's **`ai` bundle** (which provides `git`, `uv`, `bun`, and the Hugging Face CLI) and runs, in order:
 
-### Hugging Face downloads (first run)
+1. **System audio dependencies** — `sox` and `libaio` via `apt`, `yum`, `conda` (macOS), or `winget` (Windows), depending on what is available.
+2. **Repositories** — `app/` plus the TTS engines under `app/TTS-Engines/`:
+   - [MOSS-TTS-Nano](https://github.com/OpenMOSS/MOSS-TTS-Nano)
+   - [CosyVoice](https://github.com/FunAudioLLM/CosyVoice) (with submodules)
+   - [GPT-SoVITS](https://github.com/RVC-Boss/GPT-SoVITS)
+3. **Frontend deps** — `bun install`.
+4. **Python deps** — `uv sync` against the app's `pyproject.toml` into a single venv at **`app/.venv`**, then the engine requirement sets (`requirements_cv.txt`, `requirements_sov.txt`) and extras (`voxcpm`, `sherpa-onnx`, `argostranslate`, and `mlx-audio` on Apple Silicon). On Linux + NVIDIA, PyTorch is reinstalled from the CUDA 12.8 index.
+5. **Models** — GPT-SoVITS pretrained weights (`lj1995/GPT-SoVITS`), UVR5 weights (`lj1995/VoiceConversionWebUI`), and the G2PW model, all from Hugging Face.
 
-The first **Start** downloads checkpoints from the Hub (several GB). You may see:
+Expect a long first install: the repositories, the CUDA PyTorch build, and the model downloads together run to many gigabytes.
 
-- **`Warning: You are sending unauthenticated requests`** — set a [Hugging Face token](https://huggingface.co/settings/tokens) as **`HF_TOKEN`** in Pinokio (environment / secrets) or in your user environment so Hub rate limits are higher and downloads are faster.
-- **Slow transfer** — this launcher sets **`HF_HUB_ENABLE_HF_TRANSFER=1`** in `start.js` (uses the `hf_transfer` package from `app/requirements.txt`).
-- **Mirror (e.g. region / connectivity)** — optional: `HF_ENDPOINT` (see [OmniVoice README](https://github.com/k2-fsa/OmniVoice) for `hf-mirror` and similar).
+## Start
 
-### Device (CPU vs GPU)
+`start.js` is a daemon script with three processes:
 
-Logs like **`Loading model ... to cpu`** mean PyTorch selected **CPU** (no usable CUDA/MPS, or CPU-only PyTorch). For **NVIDIA** acceleration, install with **Install** so `torch.js` installs the **CUDA** build, and ensure a recent GPU driver. You can force **`OMNIVOICE_DEVICE=cuda`** only if CUDA is actually available (`torch.cuda.is_available()`).
+| Process | Address | Command |
+|---------|---------|---------|
+| FastAPI backend | `127.0.0.1:3900` | `python -m uvicorn main:app --app-dir backend` |
+| GPT-SoVITS API | `127.0.0.1:9880` | `python api_v2.py` (skipped if the engine is absent) |
+| Vite frontend | port chosen by Vite | `bun run --cwd frontend dev` |
 
-## Programmatic access
+The frontend URL is captured from the Vite output and published to Pinokio, so **Open Web UI** appears in the menu once it is up.
 
-After **Start**, open the URL from Pinokio (“Open Web UI”) or the logs. The server is **`http://127.0.0.1:<port>`** by default.
+### Environment variables set by `start.js`
 
-### cURL
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `PYTHONUNBUFFERED` | `1` | Stream backend logs into the Pinokio terminal. |
+| `HF_HUB_ENABLE_HF_TRANSFER` | `1` | Faster Hugging Face downloads. |
+| `TORCH_COMPILE_DISABLE` | `1` | Avoid `torch.compile` at runtime. |
+| `PYTHONPATH` | `TTS-Engines/CosyVoice` | Make CosyVoice importable from the backend. |
+| `TRANSLATE_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible translation endpoint (an [Ollama](https://ollama.com) server by default). |
+| `OMNIVOICE_GPTSOVITS_URL` | `http://127.0.0.1:9880` | Where the backend reaches the GPT-SoVITS API. |
 
-```bash
-curl -sS "http://127.0.0.1:PORT/"
-```
-
-Replace `PORT` with the port shown in Pinokio.
-
-### Python (Gradio client)
-
-Use the [Gradio Python client](https://www.gradio.app/guides/getting-started-with-the-python-client) against `http://127.0.0.1:PORT` (same port as in the launcher).
-
-### JavaScript
-
-Use the [Gradio JavaScript client](https://www.gradio.app/guides/getting-started-with-the-python-client) (`@gradio/client`) with the same base URL.
+Set **`HF_TOKEN`** in your Pinokio or user environment to avoid unauthenticated Hugging Face rate limits, and **`HF_ENDPOINT`** if you need a Hub mirror.
 
 ## Project layout
 
 ```
 project-root/
-├── app/
-│   ├── app.py
-│   └── requirements.txt
-├── install.js, start.js, update.js, reset.js, link.js, torch.js
-├── pinokio.js, pinokio.json
+├── app/                     # cloned by Install, git-ignored
+│   ├── .venv/               # the single Python environment
+│   ├── backend/  frontend/
+│   └── TTS-Engines/         # MOSS-TTS-Nano, CosyVoice, GPT-SoVITS
+├── install.js  start.js  update.js  reset.js
+├── requirements_cv.txt  requirements_sov.txt
+├── pinokio.js  pinokio.json  icon.png
 └── README.md
 ```
-
-## Citation
-
-OmniVoice: [arXiv:2604.00688](https://arxiv.org/abs/2604.00688), [GitHub](https://github.com/k2-fsa/OmniVoice).
