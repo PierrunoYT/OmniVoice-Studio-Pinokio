@@ -3,6 +3,38 @@ module.exports = {
     bundle: "ai"
   },
   run: [
+    // Install SOX and libaio system dependencies (prerequisites for the audio stack)
+    {
+      when: "{{which('apt')}}",
+      method: "shell.run",
+      params: {
+        sudo: true,
+        message: "apt-get update && apt-get install -y libaio-dev sox libsox-fmt-all"
+      },
+    },
+    {
+      when: "{{!which('apt') && which('yum')}}",
+      method: "shell.run",
+      params: {
+        sudo: true,
+        message: "yum install -y libaio-devel sox"
+      },
+    },
+    {
+      when: "{{platform === 'darwin'}}",
+      method: "shell.run",
+      params: {
+        message: "conda install -y -c conda-forge sox"
+      },
+    },
+    {
+      when: "{{platform === 'win32' && which('winget')}}",
+      method: "shell.run",
+      params: {
+        sudo: true,
+        message: "winget install --id=ChrisBagwell.SoX -e --silent --accept-source-agreements --accept-package-agreements --force --disable-interactivity"
+      },
+    },
     // Clone the OmniVoice Studio repository
     {
       when: "{{!exists('app')}}",
@@ -166,6 +198,7 @@ module.exports = {
     {
       method: "shell.run",
       params: {
+        venv: "../../../../.venv",
         path: "app/TTS-Engines/GPT-SoVITS/tools/uvr5",
         message: 'hf download lj1995/VoiceConversionWebUI --include="uvr5_weights/*" --local-dir=uvr5_weights'
       },
@@ -186,41 +219,6 @@ module.exports = {
         path: "app/.installed",
         text: "true"
       },
-    },
-    // Install SOX and libaio dependencies
-    {
-      when: "{{which('apt')}}",
-      method: "shell.run",
-      params: {
-        sudo: true,
-        message: "apt-get update && apt-get install -y libaio-dev sox libsox-fmt-all"
-      },
-      next: null
-    },
-    {
-      when: "{{which('yum')}}",
-      method: "shell.run",
-      params: {
-        sudo: true,
-        message: "yum install -y libaio-devel sox"
-      },
-      next: null
-    },
-    {
-      when: "{{platform === 'darwin'}}",
-      method: "shell.run",
-      params: {
-        message: "conda install -y -c conda-forge sox"
-      },
-      next: null
-    },
-    {
-      when: "{{which('winget')}}",
-      method: "shell.run",
-      params: {
-        sudo: true,
-        message: "winget install --id=ChrisBagwell.SoX -e --silent --accept-source-agreements --accept-package-agreements --force --disable-interactivity"
-      }
     }
   ]
 }
