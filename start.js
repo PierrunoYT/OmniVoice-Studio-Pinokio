@@ -25,7 +25,10 @@ module.exports = {
         }],
       },
     },
+    // Step 2: Start the GPT-SoVITS inference API on port 9880
+    //         (matches OMNIVOICE_GPTSOVITS_URL above)
     {
+      when: "{{exists('app/TTS-Engines/GPT-SoVITS/api_v2.py')}}",
       method: "shell.run",
       params: {
         venv: "../../.venv",
@@ -37,19 +40,19 @@ module.exports = {
         }],
       },
     },
-    // Step 2: Start the React/Vite frontend on port 3901
+    // Step 3: Start the React/Vite frontend (Vite picks the port)
     {
       method: "shell.run",
       params: {
         path: "app",
         message: "bun run --cwd frontend dev",
         on: [{
-          event: "/(http:\\/\\/\\S+)/",
+          event: "/(http:\\/\\/[a-zA-Z0-9_.-]+:[0-9]+)/",
           done: true,
         }],
       },
     },
-    // Step 3: Surface the frontend URL in the Pinokio UI
+    // Step 4: Surface the frontend URL in the Pinokio UI
     {
       method: "local.set",
       params: {
