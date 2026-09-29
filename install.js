@@ -3,6 +3,14 @@ module.exports = {
     bundle: "ai"
   },
   run: [
+    // Drop any marker from a previous install so a failed re-install doesn't still offer "Start"
+    {
+      when: "{{exists('app/.installed')}}",
+      method: "fs.rm",
+      params: {
+        path: "app/.installed"
+      },
+    },
     // Install SOX and libaio system dependencies (prerequisites for the audio stack)
     {
       when: "{{which('apt')}}",
