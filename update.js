@@ -20,6 +20,15 @@ module.exports = {
         message: "git pull",
       },
     },
+    // Refresh frontend dependencies in case the pull changed package.json / bun.lock
+    {
+      when: "{{exists('app/package.json')}}",
+      method: "shell.run",
+      params: {
+        path: "app",
+        message: "bun install",
+      },
+    },
     // Update MOSS-TTS-Nano
     {
       when: "{{exists('app/TTS-Engines/MOSS-TTS-Nano/.git')}}",

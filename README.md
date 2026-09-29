@@ -10,7 +10,7 @@ This repository contains **only** the launcher scripts. The application itself i
 |--------|--------|--------------|
 | **Install** | `install.js` | Installs system audio deps, clones the app and its TTS engines, builds the Python and frontend environments, downloads models. |
 | **Start** | `start.js` | Runs the backend, the GPT-SoVITS API, and the frontend, then surfaces the web UI URL. |
-| **Update** | `update.js` | `git pull` for the launcher, the app, and each TTS engine. |
+| **Update** | `update.js` | `git pull` for the launcher, the app, and each TTS engine, then refreshes frontend deps (`bun install`) and the MOSS-TTS-Nano editable install. |
 | **Reset** | `reset.js` | Deletes `app/` to return to the pre-install state. |
 
 **Start** only appears once `app/.installed` exists, which `install.js` writes as its final step — so a partially failed install will not offer to launch.
