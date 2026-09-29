@@ -49,7 +49,7 @@ The frontend URL is captured from the Vite output and published to Pinokio, so *
 | `PYTHONUNBUFFERED` | `1` | Stream backend logs into the Pinokio terminal. |
 | `HF_HUB_ENABLE_HF_TRANSFER` | `1` | Faster Hugging Face downloads. |
 | `TORCH_COMPILE_DISABLE` | `1` | Avoid `torch.compile` at runtime. |
-| `PYTHONPATH` | `TTS-Engines/CosyVoice` | Make CosyVoice importable from the backend. |
+| `PYTHONPATH` | `TTS-Engines/CosyVoice` and `TTS-Engines/CosyVoice/third_party/Matcha-TTS` | Make CosyVoice and its bundled `matcha` package importable from the backend. |
 | `TRANSLATE_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible translation endpoint (an [Ollama](https://ollama.com) server by default). |
 | `OMNIVOICE_GPTSOVITS_URL` | `http://127.0.0.1:9880` | Where the backend reaches the GPT-SoVITS API. |
 

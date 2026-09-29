@@ -12,7 +12,9 @@ module.exports = {
           PYTHONUNBUFFERED: "1",
           HF_HUB_ENABLE_HF_TRANSFER: "1",
           TORCH_COMPILE_DISABLE: "1",
-          PYTHONPATH: "TTS-Engines/CosyVoice",
+          // CosyVoice imports `matcha` from its bundled Matcha-TTS submodule, which
+          // upstream puts on sys.path by hand; the backend does not, so add it here.
+          PYTHONPATH: "TTS-Engines/CosyVoice{{platform === 'win32' ? ';' : ':'}}TTS-Engines/CosyVoice/third_party/Matcha-TTS",
           TRANSLATE_BASE_URL: "http://localhost:11434/v1",
           OMNIVOICE_GPTSOVITS_URL: "http://127.0.0.1:9880"
         },
