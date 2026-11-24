@@ -13,7 +13,7 @@ This repository contains **only** the launcher scripts. The application itself i
 | **Update** | `update.js` | `git pull` for the launcher, the app, and each TTS engine, then refreshes frontend deps (`bun install`) and the MOSS-TTS-Nano editable install. |
 | **Reset** | `reset.js` | Deletes `app/` to return to the pre-install state. |
 
-**Start** only appears once `app/.installed` exists, which `install.js` writes as its final step — so a partially failed install will not offer to launch.
+**Start** only appears once `app/.installed` exists, which `install.js` writes as its final step — so a partially failed install will not offer to launch. Instead the menu offers **Install** (to retry) and **Reset** (to wipe `app/` and start clean).
 
 ## Install
 
@@ -54,6 +54,55 @@ The frontend URL is captured from the Vite output and published to Pinokio, so *
 | `OMNIVOICE_GPTSOVITS_URL` | `http://127.0.0.1:9880` | Where the backend reaches the GPT-SoVITS API. |
 
 Set **`HF_TOKEN`** in your Pinokio or user environment to avoid unauthenticated Hugging Face rate limits, and **`HF_ENDPOINT`** if you need a Hub mirror.
+
+## API
+
+While **Start** is running, the backend at `http://127.0.0.1:3900` serves an OpenAI-compatible audio API (interactive reference at `http://127.0.0.1:3900/docs`):
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/v1/audio/speech` | Text → speech. JSON body: `input` (required, ≤4096 chars), `model` (`omnivoice`, `voxcpm2`, `cosyvoice`, `kittentts`, `moss-tts-nano`, …), `voice`, `response_format` (`mp3`, `wav`, `flac`, `opus`, `aac`, `pcm`), `speed`, `language`. |
+| `POST` | `/v1/audio/transcriptions` | Speech → text. Multipart: `file` (required), `model`, `language`, `response_format` (`json`, `text`, `verbose_json`, `srt`, `vtt`). |
+| `GET` | `/v1/audio/voices` | List available voices. |
+
+### curl
+
+```bash
+curl http://127.0.0.1:3900/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{"model": "omnivoice", "input": "Hello from OmniVoice.", "response_format": "wav"}' \
+  -o speech.wav
+
+curl http://127.0.0.1:3900/v1/audio/transcriptions -F file=@speech.wav
+```
+
+### Python
+
+```python
+import requests
+
+r = requests.post(
+    "http://127.0.0.1:3900/v1/audio/speech",
+    json={"model": "omnivoice", "input": "Hello from OmniVoice.", "response_format": "wav"},
+)
+r.raise_for_status()
+open("speech.wav", "wb").write(r.content)
+
+with open("speech.wav", "rb") as f:
+    print(requests.post("http://127.0.0.1:3900/v1/audio/transcriptions", files={"file": f}).json())
+```
+
+### JavaScript
+
+```javascript
+const res = await fetch("http://127.0.0.1:3900/v1/audio/speech", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ model: "omnivoice", input: "Hello from OmniVoice.", response_format: "wav" }),
+});
+if (!res.ok) throw new Error(await res.text());
+const wav = new Uint8Array(await res.arrayBuffer());
+```
 
 ## Project layout
 

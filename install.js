@@ -202,13 +202,16 @@ module.exports = {
         "local-dir": "pretrained_models"
       },
     },
-    // Download UVR5 weights from Hugging Face
+    // Download UVR5 weights from Hugging Face. The repo stores them under `uvr5_weights/`,
+    // so download into `tools/uvr5` itself to land them in `tools/uvr5/uvr5_weights/`,
+    // where GPT-SoVITS looks for them (not a nested `uvr5_weights/uvr5_weights/`).
     {
-      method: "shell.run",
+      method: "hf.download",
       params: {
-        venv: "../../../../.venv",
         path: "app/TTS-Engines/GPT-SoVITS/tools/uvr5",
-        message: 'hf download lj1995/VoiceConversionWebUI --include="uvr5_weights/*" --local-dir=uvr5_weights'
+        "_": [ "lj1995/VoiceConversionWebUI" ],
+        "include": '"uvr5_weights/*"',
+        "local-dir": "."
       },
     },
     // Download G2P models from Hugging Face

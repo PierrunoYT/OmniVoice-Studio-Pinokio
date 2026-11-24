@@ -72,6 +72,26 @@ module.exports = {
           confirm: "Are you sure you wish to reset the app? This will delete the app folder.",
         }]
       }
+    } else if (running.reset) {
+      return [{
+        default: true,
+        icon: "fa-solid fa-terminal",
+        text: "Resetting",
+        href: "reset.js",
+      }]
+    } else if (info.exists("app")) {
+      // A previous install failed part-way: let the user retry it or wipe `app/` and start clean
+      return [{
+        default: true,
+        icon: "fa-solid fa-plug",
+        text: "Install",
+        href: "install.js",
+      }, {
+        icon: "fa-regular fa-circle-xmark",
+        text: "<div><strong>Reset</strong><div>Revert to pre-install state</div></div>",
+        href: "reset.js",
+        confirm: "Are you sure you wish to reset the app? This will delete the app folder.",
+      }]
     } else {
       return [{
         default: true,
